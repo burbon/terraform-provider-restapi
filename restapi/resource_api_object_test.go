@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Mastercard/terraform-provider-restapi/fakeserver"
+	mylog "github.com/Mastercard/terraform-provider-restapi/log"
 	"github.com/hashicorp/terraform/helper/resource"
 	"os"
 	"testing"
@@ -25,7 +26,14 @@ func TestAccRestApiObject_Basic(t *testing.T) {
 	debug := false
 	api_server_objects := make(map[string]map[string]interface{})
 
-	svr := fakeserver.NewFakeServer(8082, api_server_objects, true, debug, "")
+	svr := fakeserver.NewFakeServer(&fakeserver.FakeServerOpts{
+		Port:    8082,
+		Objects: api_server_objects,
+		Start:   true,
+		Debug:   debug,
+		Logger:  mylog.New(debug),
+		Dir:     "",
+	})
 	os.Setenv("REST_API_URI", "http://127.0.0.1:8082")
 
 	opt := &apiClientOpt{

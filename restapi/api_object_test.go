@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Mastercard/terraform-provider-restapi/fakeserver"
+	mylog "github.com/Mastercard/terraform-provider-restapi/log"
 	"log"
 	"testing"
 )
 
-var test_debug = false
-var http_server_debug = false
-var api_object_debug = false
-var api_client_debug = false
+var debug = true
+var test_debug = debug
+var http_server_debug = debug
+var api_object_debug = debug
+var api_client_debug = debug
 
 type test_api_object struct {
 	Test_case string            `json:"Test_case"`
@@ -166,7 +168,14 @@ func TestAPIObject(t *testing.T) {
 	if test_debug {
 		log.Println("api_object_test.go: Starting HTTP server")
 	}
-	svr := fakeserver.NewFakeServer(8081, api_server_objects, true, http_server_debug, "")
+	svr := fakeserver.NewFakeServer(&fakeserver.FakeServerOpts{
+		Port:    8081,
+		Objects: api_server_objects,
+		Start:   true,
+		Debug:   http_server_debug,
+		Logger:  mylog.New(http_server_debug),
+		Dir:     "",
+	})
 
 	/* Loop through all of the objects and GET their data from the server */
 	t.Run("read_object", func(t *testing.T) {
@@ -269,6 +278,22 @@ func TestAPIObject(t *testing.T) {
 			t.Errorf("%s: expected %s but got %s", search_value, "5", object.id)
 		}
 	})
+
+	// t.Run("create_with_put", func(t *testing.T) {
+	// 	object_opts := &apiObjectOpts{
+	// 		path:            "/api/objects",
+	// 		create_with_put: true,
+	// 		debug:           api_object_debug,
+	// 	}
+	// 	object, err := NewAPIObject(client, object_opts)
+	// 	if err != nil {
+	// 		t.Fatalf("api_object_test.go: Failed to create new api_object to find")
+	// 	}
+
+	// 	if err := object.update_object(); err != nil {
+	// 		t.Fatalf("api_object_test.go: Failed to update api_objects: %s", err)
+	// 	}
+	// })
 
 	if test_debug {
 		log.Println("api_object_test.go: Stopping HTTP server")

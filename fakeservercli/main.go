@@ -3,7 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	fakeserver "github.com/Mastercard/terraform-provider-restapi/fakeserver"
+	"github.com/Mastercard/terraform-provider-restapi/fakeserver"
+	"github.com/Mastercard/terraform-provider-restapi/log"
 	"os"
 )
 
@@ -16,7 +17,16 @@ func main() {
 
 	flag.Parse()
 
-	svr := fakeserver.NewFakeServer(*port, api_server_objects, false, *debug, *static_dir)
+	logger := log.New(*debug)
+	svrOpts := &fakeserver.FakeServerOpts{
+		Port:    *port,
+		Objects: api_server_objects,
+		Start:   false,
+		Debug:   *debug,
+		Logger:  logger,
+		Dir:     *static_dir,
+	}
+	svr := fakeserver.NewFakeServer(svrOpts)
 
 	fmt.Printf("Starting server on port %d...\n", *port)
 	fmt.Println("Objects are at /api/objects/{id}")

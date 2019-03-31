@@ -27,7 +27,12 @@ func resourceRestApi() *schema.Resource {
 			},
 			"create_path": &schema.Schema{
 				Type:        schema.TypeString,
-				Description: "Defaults to `path`. The API path that represents where to CREATE (POST) objects of this type on the API server. The string `{id}` will be replaced with the terraform ID of the object if the data contains the `id_attribute`.",
+				Description: "Defaults to `path`. The API path that represents where to CREATE (POST/PUT) objects of this type on the API server. The string `{id}` will be replaced with the terraform ID of the object if the data contains the `id_attribute`. Default method is POST. Use `create_with_put` for PUT.",
+				Optional:    true,
+			},
+			"create_with_put": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "Use PUT methon on CREATE.",
 				Optional:    true,
 			},
 			"read_path": &schema.Schema{
@@ -252,6 +257,9 @@ func buildApiObjectOpts(d *schema.ResourceData) (*apiObjectOpts, error) {
 	log.Printf("create_path: %s", d.Get("create_path"))
 	if v, ok := d.GetOk("create_path"); ok {
 		opts.post_path = v.(string)
+	}
+	if v, ok := d.GetOk("create_with_put"); ok {
+		opts.create_with_put = v.(bool)
 	}
 	if v, ok := d.GetOk("read_path"); ok {
 		opts.get_path = v.(string)
