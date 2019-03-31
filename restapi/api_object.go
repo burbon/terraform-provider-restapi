@@ -12,28 +12,30 @@ import (
 )
 
 type apiObjectOpts struct {
-	path         string
-	get_path     string
-	post_path    string
-	put_path     string
-	delete_path  string
-	search_path  string
-	debug        bool
-	id           string
-	id_attribute string
-	data         string
+	path            string
+	get_path        string
+	post_path       string
+	create_with_put bool
+	put_path        string
+	delete_path     string
+	search_path     string
+	debug           bool
+	id              string
+	id_attribute    string
+	data            string
 }
 
 type api_object struct {
-	api_client   *api_client
-	get_path     string
-	post_path    string
-	put_path     string
-	delete_path  string
-	search_path  string
-	debug        bool
-	id           string
-	id_attribute string
+	api_client      *api_client
+	get_path        string
+	post_path       string
+	create_with_put bool
+	put_path        string
+	delete_path     string
+	search_path     string
+	debug           bool
+	id              string
+	id_attribute    string
 
 	/* Set internally */
 	data     map[string]interface{} /* Data as managed by the user */
@@ -72,17 +74,18 @@ func NewAPIObject(i_client *api_client, opts *apiObjectOpts) (*api_object, error
 	}
 
 	obj := api_object{
-		api_client:   i_client,
-		get_path:     opts.get_path,
-		post_path:    opts.post_path,
-		put_path:     opts.put_path,
-		delete_path:  opts.delete_path,
-		search_path:  opts.search_path,
-		debug:        opts.debug,
-		id:           opts.id,
-		id_attribute: opts.id_attribute,
-		data:         make(map[string]interface{}),
-		api_data:     make(map[string]interface{}),
+		api_client:      i_client,
+		get_path:        opts.get_path,
+		post_path:       opts.post_path,
+		create_with_put: opts.create_with_put,
+		put_path:        opts.put_path,
+		delete_path:     opts.delete_path,
+		search_path:     opts.search_path,
+		debug:           opts.debug,
+		id:              opts.id,
+		id_attribute:    opts.id_attribute,
+		data:            make(map[string]interface{}),
+		api_data:        make(map[string]interface{}),
 	}
 
 	if opts.data != "" {

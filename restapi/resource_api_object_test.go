@@ -26,7 +26,7 @@ func TestAccRestApiObject_Basic(t *testing.T) {
 	debug := false
 	api_server_objects := make(map[string]map[string]interface{})
 
-	svr := fakeserver.NewFakeServer(&fakeserver.FakeServerOpts{
+	svr := fakeserver.NewFakeServer(&fakeserver.Opts{
 		Port:    8082,
 		Objects: api_server_objects,
 		Start:   true,

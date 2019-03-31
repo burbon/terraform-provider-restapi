@@ -139,11 +139,10 @@ func (client *api_client) send_request(method string, path string, data string) 
 		log.Printf("api_client.go: method='%s', path='%s', full uri (derived)='%s', data='%s'\n", method, path, full_uri, data)
 	}
 
-	buffer := bytes.NewBuffer([]byte(data))
-
 	if data == "" {
 		req, err = http.NewRequest(method, full_uri, nil)
 	} else {
+		buffer := bytes.NewBuffer([]byte(data))
 		req, err = http.NewRequest(method, full_uri, buffer)
 
 		/* Default of application/json, but allow headers array to overwrite later */
@@ -207,11 +206,11 @@ func (client *api_client) send_request(method string, path string, data string) 
 			}
 		}
 
-		bodyBytes, err2 := ioutil.ReadAll(resp.Body)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
 
-		if err2 != nil {
-			return "", err2
+		if err != nil {
+			return "", err
 		}
 		body := strings.TrimPrefix(string(bodyBytes), client.xssi_prefix)
 

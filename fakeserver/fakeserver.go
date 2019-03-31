@@ -13,7 +13,14 @@ import (
 	"time"
 )
 
-type FakeServerOpts struct {
+type key int
+
+const (
+	keyRequestBody key = iota
+)
+
+// Opts defines options for FakeServer
+type Opts struct {
 	Port    int
 	Objects map[string]map[string]interface{}
 	Start   bool
@@ -22,7 +29,8 @@ type FakeServerOpts struct {
 	Dir     string
 }
 
-type fakeserver struct {
+// FakeServer ...
+type FakeServer struct {
 	server  *http.Server
 	objects map[string]map[string]interface{}
 	debug   bool
@@ -30,10 +38,11 @@ type fakeserver struct {
 	running bool
 }
 
-func NewFakeServer(opts *FakeServerOpts) *fakeserver {
+// NewFakeServer creates new FakeServer
+func NewFakeServer(opts *Opts) *FakeServer {
 	serverMux := http.NewServeMux()
 
-	svr := &fakeserver{
+	svr := &FakeServer{
 		debug:   opts.Debug,
 		log:     opts.Logger,
 		objects: opts.Objects,
@@ -45,33 +54,34 @@ func NewFakeServer(opts *FakeServerOpts) *fakeserver {
 	if dir != "" {
 		_, err := os.Stat(dir)
 		if err == nil {
-			svr.log.Printf("fakeserver.go: Will serve static files in '%s' under /static path", dir)
+			svr.log.Debugf("Will serve static files in '%s' under /static path", dir)
 			serverMux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 		} else {
-			svr.log.Printf("fakeserver.go: WARNING: Not serving /static because directory '%s' does not exist", dir)
+			svr.log.Printf("WARNING: Not serving /static because directory '%s' does not exist", dir)
 		}
 	}
 
-	finalHandler := http.HandlerFunc(svr.handle_api_object)
+	finalHandler := http.HandlerFunc(svr.handleAPIObject)
 	serverMux.Handle("/", svr.middlewareDebug(finalHandler))
 
-	api_object_server := &http.Server{
+	apiObjectServer := &http.Server{
 		Addr:    fmt.Sprintf("127.0.0.1:%d", opts.Port),
 		Handler: serverMux,
 	}
 
-	svr.server = api_object_server
+	svr.server = apiObjectServer
 
 	if opts.Start {
 		svr.StartInBackground()
 	}
 
-	svr.log.Printf("fakeserver.go: Set up fakeserver: port=%d, debug=%t\n", opts.Port, opts.Debug)
+	svr.log.Debugf("Set up FakeServer: port=%d, debug=%t\n", opts.Port, opts.Debug)
 
 	return svr
 }
 
-func (svr *fakeserver) StartInBackground() {
+// StartInBackground ...
+func (svr *FakeServer) StartInBackground() {
 	go svr.server.ListenAndServe()
 
 	/* Let the server start */
@@ -79,68 +89,71 @@ func (svr *fakeserver) StartInBackground() {
 	svr.running = true
 }
 
-func (svr *fakeserver) Shutdown() {
+// Shutdown ...
+func (svr *FakeServer) Shutdown() {
 	svr.server.Close()
 	svr.running = false
 }
 
-func (svr *fakeserver) Running() bool {
+// Running ...
+func (svr *FakeServer) Running() bool {
 	return svr.running
 }
 
-func (svr *fakeserver) GetServer() *http.Server {
+// GetServer ...
+func (svr *FakeServer) GetServer() *http.Server {
 	return svr.server
 }
 
-func (svr *fakeserver) middlewareDebug(next http.Handler) http.Handler {
+func (svr *FakeServer) middlewareDebug(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		/* Assume this will never fail */
 		b, _ := ioutil.ReadAll(r.Body)
-		ctx := context.WithValue(r.Context(), "b", b)
+		ctx := context.WithValue(r.Context(), keyRequestBody, b)
 
 		if svr.debug {
-			svr.log.Printf("fakeserver.go: Recieved request: %+v\n", r)
-			svr.log.Printf("fakeserver.go: Headers:\n")
+			svr.log.Debugf("Received request: %+v\n", r)
+			svr.log.Debugf("Headers:\n")
 			for name, headers := range r.Header {
 				name = strings.ToLower(name)
 				for _, h := range headers {
-					svr.log.Printf("fakeserver.go:  %v: %v", name, h)
+					svr.log.Debugf(" %v: %v", name, h)
 				}
 			}
-			svr.log.Printf("fakeserver.go: BODY: %s\n", string(b))
-			svr.log.Printf("fakeserver.go: IDs and objects:\n")
+			svr.log.Debugf("BODY: %s\n", string(b))
+			svr.log.Debugf("IDs and objects:\n")
 			for id, obj := range svr.objects {
-				svr.log.Printf("  %s: %+v\n", id, obj)
+				svr.log.Debugf("  %s: %+v\n", id, obj)
 			}
 		}
 
 		path := r.URL.EscapedPath()
 		parts := strings.Split(path, "/")
-		svr.log.Printf("fakeserver.go: Request received: %s %s\n", r.Method, path)
-		svr.log.Printf("fakeserver.go: Split request up into %d parts: %v\n", len(parts), parts)
+		svr.log.Debugf("Request received: %s %s\n", r.Method, path)
+		svr.log.Debugf("Split request up into %d parts: %v\n", len(parts), parts)
 		if r.URL.RawQuery != "" {
-			svr.log.Printf("fakeserver.go: Query string: %s\n", r.URL.RawQuery)
+			svr.log.Debugf("Query string: %s\n", r.URL.RawQuery)
 		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func (svr *fakeserver) handle_api_object(w http.ResponseWriter, r *http.Request) {
+func (svr *FakeServer) handleAPIObject(w http.ResponseWriter, r *http.Request) {
 	var head string
-	head, r.URL.Path = ShiftPath(r.URL.Path)
+	head, r.URL.Path = shiftPath(r.URL.Path)
 	if head != "api" {
 		http.Error(w, fmt.Sprintf("Only /api is allowed, got: /%s", head), http.StatusBadRequest)
 		return
 	}
-	head, r.URL.Path = ShiftPath(r.URL.Path)
+	head, r.URL.Path = shiftPath(r.URL.Path)
 	if head != "objects" {
 		http.Error(w, fmt.Sprintf("Only /api/objects is allowed, got: /api/%s", head), http.StatusBadRequest)
 		return
 	}
 
 	var id string
-	id, r.URL.Path = ShiftPath(r.URL.Path)
+	id, r.URL.Path = shiftPath(r.URL.Path)
 
 	if r.URL.Path != "/" {
 		http.Error(w, fmt.Sprintf("Unexpected extra parameters: %s, %s", head, r.URL.Path), http.StatusBadRequest)
@@ -171,7 +184,7 @@ func (svr *fakeserver) handle_api_object(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (svr *fakeserver) handleGet(id string) http.Handler {
+func (svr *FakeServer) handleGet(id string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		obj, ok := svr.objects[id]
 		if !ok {
@@ -179,31 +192,31 @@ func (svr *fakeserver) handleGet(id string) http.Handler {
 			return
 		}
 
-		svr.log.Printf("fakeserver.go: Returning object.\n")
+		svr.log.Debugf("Returning object.\n")
 
 		b, _ := json.Marshal(obj)
 		w.Write(b)
 	})
 }
-func (svr *fakeserver) handlePut(id string) http.Handler {
+func (svr *FakeServer) handlePut(id string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		svr.log.Printf("fakeserver.go: PUT")
-		b := r.Context().Value("b").([]byte)
+		svr.log.Debugf("PUT")
+		b := r.Context().Value(keyRequestBody).([]byte)
 
-		svr.log.Printf("fakeserver.go: data sent - unmarshalling from JSON: %s\n", string(b))
+		svr.log.Debugf("data sent - unmarshalling from JSON: %s\n", string(b))
 
 		var obj map[string]interface{}
 		if err := json.Unmarshal(b, &obj); err != nil {
 			/* Failure goes back to the user as a 500. Log data here for
 			   debugging (which shouldn't ever fail!) */
-			svr.log.Printf("fakeserver.go: Unmarshal of request failed: %s\n", err)
-			svr.log.Printf("\nBEGIN passed data:\n%s\nEND passed data.", string(b))
+			svr.log.Debugf("Unmarshal of request failed: %s\n", err)
+			svr.log.Debugf("\nBEGIN passed data:\n%s\nEND passed data.", string(b))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
 		/* Overwrite our stored test object */
-		svr.log.Printf("fakeserver.go: Overwriting %s with new data:%+v\n", id, obj)
+		svr.log.Debugf("Overwriting %s with new data:%+v\n", id, obj)
 		svr.objects[id] = obj
 
 		/* Coax the data we were sent back to JSON and send it to the user */
@@ -212,17 +225,17 @@ func (svr *fakeserver) handlePut(id string) http.Handler {
 	})
 }
 
-func (svr *fakeserver) handleDelete(id string) http.Handler {
+func (svr *FakeServer) handleDelete(id string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		svr.log.Printf("fakeserver.go: DELETE")
+		svr.log.Debugf("DELETE")
 		delete(svr.objects, id)
 		return
 	})
 }
 
-func (svr *fakeserver) handleGetList() http.Handler {
+func (svr *FakeServer) handleGetList() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		svr.log.Printf("fakeserver.go: GET list")
+		svr.log.Debugf("GET list")
 		result := make([]map[string]interface{}, 0)
 		for _, hash := range svr.objects {
 			result = append(result, hash)
@@ -232,19 +245,19 @@ func (svr *fakeserver) handleGetList() http.Handler {
 	})
 }
 
-func (svr *fakeserver) handlePost() http.Handler {
+func (svr *FakeServer) handlePost() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		svr.log.Printf("fakeserver.go: POST")
-		b := r.Context().Value("b").([]byte)
+		svr.log.Debugf("POST")
+		b := r.Context().Value(keyRequestBody).([]byte)
 
-		svr.log.Printf("fakeserver.go: data sent - unmarshalling from JSON: %s\n", string(b))
+		svr.log.Debugf("data sent - unmarshalling from JSON: %s\n", string(b))
 
 		var obj map[string]interface{}
 		if err := json.Unmarshal(b, &obj); err != nil {
 			/* Failure goes back to the user as a 500. Log data here for
 			   debugging (which shouldn't ever fail!) */
-			svr.log.Printf("fakeserver.go: Unmarshal of request failed: %s\n", err)
-			svr.log.Printf("\nBEGIN passed data:\n%s\nEND passed data.", string(b))
+			svr.log.Debugf("Unmarshal of request failed: %s\n", err)
+			svr.log.Debugf("\nBEGIN passed data:\n%s\nEND passed data.", string(b))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -260,20 +273,20 @@ func (svr *fakeserver) handlePost() http.Handler {
 		} else if val, ok := obj["ID"]; ok {
 			id = fmt.Sprintf("%v", val)
 		} else {
-			svr.log.Printf("fakeserver.go: Bad request - POST to /api/objects without id field")
+			svr.log.Debugf("Bad request - POST to /api/objects without id field")
 			http.Error(w, "POST sent with no id field in the data. Cannot persist this!", http.StatusBadRequest)
 			return
 		}
 
 		_, ok := svr.objects[id]
 		if ok {
-			svr.log.Printf("fakeserver.go: Object exists. Allowing to overwrite: %s", id)
+			svr.log.Debugf("Object exists. Allowing to overwrite: %s", id)
 			// http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
 			// return
 		}
 
 		/* Creating new object */
-		svr.log.Printf("fakeserver.go: Creating object %s with new data:%+v\n", id, obj)
+		svr.log.Debugf("Creating object %s with new data:%+v\n", id, obj)
 		svr.objects[id] = obj
 
 		/* Coax the data we were sent back to JSON and send it to the user */
@@ -282,7 +295,7 @@ func (svr *fakeserver) handlePost() http.Handler {
 	})
 }
 
-func ShiftPath(p string) (head, tail string) {
+func shiftPath(p string) (head, tail string) {
 	p = path.Clean("/" + p)
 	i := strings.Index(p[1:], "/") + 1
 	if i <= 0 {

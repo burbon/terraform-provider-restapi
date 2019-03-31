@@ -168,7 +168,7 @@ func TestAPIObject(t *testing.T) {
 	if test_debug {
 		log.Println("api_object_test.go: Starting HTTP server")
 	}
-	svr := fakeserver.NewFakeServer(&fakeserver.FakeServerOpts{
+	svr := fakeserver.NewFakeServer(&fakeserver.Opts{
 		Port:    8081,
 		Objects: api_server_objects,
 		Start:   true,
