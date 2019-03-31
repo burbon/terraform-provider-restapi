@@ -1,4 +1,7 @@
 language: go
 go:
-- 1.x
+  - 1.x
 
+before_install:
+  - mkdir -p $TRAVIS_BUILD_DIR $GOPATH/src/github.com/Mastercard
+  - test ! -d $GOPATH/src/github.com/Mastercard/terraform-provider-restapi && mv $TRAVIS_BUILD_DIR $GOPATH/src/github.com/Mastercard/terraform-provider-restapi || true 
