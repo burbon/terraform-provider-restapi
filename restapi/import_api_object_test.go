@@ -9,15 +9,15 @@ import (
 )
 
 func TestAccRestApiObject_importBasic(t *testing.T) {
-	debug := false
-	api_server_objects := make(map[string]map[string]interface{})
+	log := mylog.New(debug)
+	apiServerObjects := make(map[string]map[string]interface{})
 
 	svr := fakeserver.NewFakeServer(&fakeserver.Opts{
 		Port:    8082,
-		Objects: api_server_objects,
+		Objects: apiServerObjects,
 		Start:   true,
 		Debug:   debug,
-		Logger:  mylog.New(debug),
+		Logger:  log,
 		Dir:     "",
 	})
 	os.Setenv("REST_API_URI", "http://127.0.0.1:8082")

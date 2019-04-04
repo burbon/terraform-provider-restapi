@@ -26,6 +26,11 @@ func (l *Logger) Printf(format string, v ...interface{}) {
 	l.logger.Output(2, fmt.Sprintf(format, v...))
 }
 
+// Println prints using std logger.
+func (l *Logger) Println(v ...interface{}) {
+	l.logger.Output(2, fmt.Sprintln(v...))
+}
+
 // Debugf prints using std logger only if debug flag is set.
 func (l *Logger) Debugf(format string, v ...interface{}) {
 	if l.debug {

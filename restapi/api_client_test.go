@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"log"
+	mylog "github.com/Mastercard/terraform-provider-restapi/log"
 	"net/http"
 	"testing"
 	"time"
@@ -10,7 +10,7 @@ import (
 var api_client_server *http.Server
 
 func TestAPIClient(t *testing.T) {
-	debug := false
+	log := mylog.New(debug)
 
 	if debug {
 		log.Println("client_test.go: Starting HTTP server")

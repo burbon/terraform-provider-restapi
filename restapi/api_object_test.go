@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"github.com/Mastercard/terraform-provider-restapi/fakeserver"
 	mylog "github.com/Mastercard/terraform-provider-restapi/log"
-	"log"
 	"testing"
 )
 
-var debug = true
 var test_debug = debug
 var http_server_debug = debug
 var api_object_debug = debug
@@ -95,7 +93,7 @@ var client, err = NewAPIClient(&apiClientOpt{
 	debug:                 api_client_debug,
 })
 
-func GenerateTestObjects(data_objects []string, t *testing.T, test_debug bool) (typed map[string]test_api_object, untyped map[string]map[string]interface{}) {
+func GenerateTestObjects(data_objects []string, t *testing.T, log *mylog.Logger) (typed map[string]test_api_object, untyped map[string]map[string]interface{}) {
 	/* Messy... fakeserver wants "generic" objects, but it is much easier
 	   to write our test cases with typed (test_api_object) objects. Make
 	   maps of both */
@@ -135,7 +133,8 @@ func add_test_api_object(input string, t *testing.T, test_debug bool) (test_obj 
 }
 
 func TestAPIObject(t *testing.T) {
-	generated_objects, api_server_objects := GenerateTestObjects(testing_data_objects, t, test_debug)
+	log := mylog.New(debug)
+	generated_objects, api_server_objects := GenerateTestObjects(testing_data_objects, t, log)
 
 	/* Construct a local map of test case objects with only the ID populated */
 	if test_debug {
