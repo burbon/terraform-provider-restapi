@@ -22,25 +22,6 @@ func TestAccRestApiObject_importBasic(t *testing.T) {
 	})
 	os.Setenv("REST_API_URI", "http://127.0.0.1:8082")
 
-	opt := &apiClientOpt{
-		uri:                   "http://127.0.0.1:8082/",
-		insecure:              false,
-		username:              "",
-		password:              "",
-		headers:               make(map[string]string, 0),
-		timeout:               2,
-		id_attribute:          "id",
-		copy_keys:             make([]string, 0),
-		write_returns_object:  false,
-		create_returns_object: false,
-		debug:                 debug,
-	}
-	client, err := NewAPIClient(opt)
-	if err != nil {
-		t.Fatal(err)
-	}
-	client.send_request("POST", "/api/objects", `{ "id": "1234", "first": "Foo", "last": "Bar" }`)
-
 	resource.UnitTest(t, resource.TestCase{
 		Providers: testAccProviders,
 		PreCheck:  func() { svr.StartInBackground() },

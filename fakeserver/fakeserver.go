@@ -280,9 +280,9 @@ func (svr *FakeServer) handlePost() http.Handler {
 
 		_, ok := svr.objects[id]
 		if ok {
-			svr.log.Debugf("Object exists. Allowing to overwrite: %s", id)
-			// http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
-			// return
+			svr.log.Debugf("Object exists. Not allowing to overwrite: %s", id)
+			http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
+			return
 		}
 
 		/* Creating new object */
